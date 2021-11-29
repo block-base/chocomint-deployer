@@ -1,16 +1,17 @@
 import {
+  Box,
   Button,
   Container,
+  Flex,
   FormLabel,
   Heading,
-  Input,
-  Textarea,
-  RadioGroup,
   HStack,
+  Input,
   Radio,
+  RadioGroup,
+  Spacer,
   Text,
-  Box,
-  Flex
+  Textarea,
 } from "@chakra-ui/react";
 import { Web3Provider } from "@ethersproject/providers";
 import { useWeb3React } from "@web3-react/core";
@@ -31,7 +32,7 @@ const Home: NextPage = () => {
   const [root, setRoot] = React.useState("");
   const [tokenURIBase, setTokenURIBase] = React.useState("");
   const [owner, setOwner] = React.useState("");
-  const [admin, setAdmin] = React.useState("");
+  const [adminList, setAdminList] = React.useState([""]);
   const [deployCalldata, setDeployCalldata] = React.useState("");
   const [deployingContract, setDeployingContract] = React.useState("");
   const [factoryAddress, setFactoryAddress] = React.useState("");
@@ -42,6 +43,33 @@ const Home: NextPage = () => {
 
   const connectWallet = async () => {
     activate(injectedConnector);
+  };
+
+  const addAdmin = () => {
+    console.log(adminList);
+    const newList = adminList.concat([""]);
+    setAdminList(newList);
+  };
+
+  const handleAdmin = (index: number, e) => {
+    const newAttributes = adminList.map((admin, i) => {
+      if (i === index) {
+        return e.target.value;
+      } else return admin;
+    });
+    setAdminList(newAttributes);
+  };
+
+  const removeAdmin = (index: number) => {
+    const newAttributes = adminList
+      .filter((admin, i) => {
+        return i !== index;
+      })
+      .map((admin, i) => {
+        return admin;
+      });
+    // const newList = adminList.splice(index,1);
+    setAdminList(newAttributes);
   };
 
   const signDeployContract = async () => {
@@ -63,7 +91,7 @@ const Home: NextPage = () => {
       signer,
       signerAddress,
       owner,
-      admin,
+      adminList[0],
       name,
       tokenURIBase,
       version,
@@ -88,7 +116,7 @@ const Home: NextPage = () => {
   const papaparseOptions = {
     header: true,
     dynamicTyping: true,
-    skipEmptyLines: true
+    skipEmptyLines: true,
   };
 
   const signMintToken = async () => {
@@ -139,26 +167,11 @@ const Home: NextPage = () => {
       </RadioGroup>
 
       <FormLabel>name</FormLabel>
-      <Input
-        placeholder="Chocomint Animals"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        mb="2"
-      ></Input>
+      <Input placeholder="Chocomint Animals" value={name} onChange={(e) => setName(e.target.value)} mb="2"></Input>
       <FormLabel>symbol</FormLabel>
-      <Input
-        placeholder="CA"
-        value={symbol}
-        onChange={(e) => setSymbol(e.target.value)}
-        mb="2"
-      ></Input>
+      <Input placeholder="CA" value={symbol} onChange={(e) => setSymbol(e.target.value)} mb="2"></Input>
       <FormLabel>version</FormLabel>
-      <Input
-        placeholder="0.0.0"
-        value={version}
-        onChange={(e) => setVersion(e.target.value)}
-        mb="2"
-      ></Input>
+      <Input placeholder="0.0.0" value={version} onChange={(e) => setVersion(e.target.value)} mb="2"></Input>
       <FormLabel>tokenURIBase</FormLabel>
       <Input
         placeholder="https://ipfs/..."
@@ -167,19 +180,24 @@ const Home: NextPage = () => {
         mb="2"
       ></Input>
       <FormLabel>owner address</FormLabel>
-      <Input
-        placeholder="0x"
-        value={owner}
-        onChange={(e) => setOwner(e.target.value)}
-        mb="2"
-      ></Input>
+      <Input placeholder="0x" value={owner} onChange={(e) => setOwner(e.target.value)} mb="2"></Input>
       <FormLabel>admin address</FormLabel>
-      <Input
-        placeholder="0x"
-        value={admin}
-        onChange={(e) => setAdmin(e.target.value)}
-        mb="2"
-      ></Input>
+      {adminList.map((admin, index) => {
+        return (
+          <Flex key={index}>
+            <Input placeholder="0x" value={adminList[index]} onChange={(e) => handleAdmin(index, e)} mb="2"></Input>
+            <Button colorScheme="teal" onClick={(e) => removeAdmin(index)}>
+              ×
+            </Button>
+          </Flex>
+        );
+      })}
+      <Flex>
+        <Spacer />
+        <Button colorScheme="teal" onClick={addAdmin}>
+          +
+        </Button>
+      </Flex>
       <Text color="red">{error}</Text>
       {account ? (
         <Button onClick={signDeployContract} marginY="2">

@@ -1,9 +1,5 @@
 import { ChakraProvider } from "@chakra-ui/react";
-import {
-  ExternalProvider,
-  JsonRpcFetchFunc,
-  Web3Provider
-} from "@ethersproject/providers";
+import { ExternalProvider, JsonRpcFetchFunc, Web3Provider } from "@ethersproject/providers";
 import { Web3ReactProvider } from "@web3-react/core";
 import React from "react";
 export interface AppWrapperProps {
