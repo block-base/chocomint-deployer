@@ -10,6 +10,7 @@ import {
   Radio,
   RadioGroup,
   Spacer,
+  Switch,
   Text,
   Textarea,
 } from "@chakra-ui/react";
@@ -29,7 +30,9 @@ const Home: NextPage = () => {
   const [name, setName] = React.useState("");
   const [symbol, setSymbol] = React.useState("");
   const [version, setVersion] = React.useState("");
+  const [isRoot, setIsRoot] = React.useState(false);
   const [root, setRoot] = React.useState("");
+  const [salt, setSalt] = React.useState("");
   const [tokenURIBase, setTokenURIBase] = React.useState("");
   const [owner, setOwner] = React.useState("");
   const [adminList, setAdminList] = React.useState([""]);
@@ -86,7 +89,7 @@ const Home: NextPage = () => {
 
     const signer = library.getSigner();
     const signerAddress = await signer.getAddress();
-    const { deployCalldata, to, deployedAddress } = await signDeploy(
+    const { deployCalldata, to, deployedAddress, salt } = await signDeploy(
       Number(chainId),
       signer,
       signerAddress,
@@ -95,13 +98,16 @@ const Home: NextPage = () => {
       name,
       tokenURIBase,
       version,
-      symbol
+      symbol,
+      isRoot,
+      mintList
     );
-    console.log(deployCalldata, to, deployedAddress);
+    console.log(deployCalldata, to, deployedAddress, salt);
     setDeployCalldata(deployCalldata);
     setDeployingContract(deployedAddress);
     setNFTContractAddress(deployedAddress);
     setFactoryAddress(to);
+    setSalt(salt);
   };
 
   const deployContract = async () => {
@@ -134,7 +140,8 @@ const Home: NextPage = () => {
       Number(chainId),
       nftContractAddress,
       signerAddress,
-      mintList
+      mintList,
+      salt
     );
     setMintCalldata(calldata);
     signer.sendTransaction({ to, data: mintCalldata });
@@ -149,15 +156,31 @@ const Home: NextPage = () => {
       <Heading size="lg" marginY="4">
         Chocomint Deployer
       </Heading>
-      <FormLabel>mint先</FormLabel>
-      <Box mb="4">
-        <CSVReader
-          onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
-          parserOptions={papaparseOptions}
-        />
-      </Box>
-
-      <FormLabel>chainId</FormLabel>
+      <Heading size="md" marginY="4">
+        Contract Deploy
+      </Heading>
+      <FormLabel>Set Root?</FormLabel>
+      <Switch
+        size="lg"
+        colorScheme="teal"
+        onChange={(e) => {
+          setIsRoot(e.target.checked);
+        }}
+      />
+      {isRoot ? (
+        <Box my="4">
+          <FormLabel>mint先</FormLabel>
+          <Box mb="4">
+            <CSVReader
+              onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
+              parserOptions={papaparseOptions}
+            />
+          </Box>
+        </Box>
+      ) : (
+        <></>
+      )}
+      <FormLabel mt="2">chainId</FormLabel>
       <RadioGroup defaultValue="4" onChange={(e) => setChainId(e)} mb="4">
         <HStack spacing="24px">
           <Radio value="4">Rinkeby</Radio>
@@ -221,9 +244,24 @@ const Home: NextPage = () => {
         </Button>
       )}
 
-      <Text mt="8" fontSize="xl">
-        Token mint
-      </Text>
+      <Heading size="md" mt="8" mb="4">
+        Token Mint
+      </Heading>
+      <Box my="4">
+        <FormLabel>mint先</FormLabel>
+        <Box mb="4">
+          <CSVReader
+            onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
+            parserOptions={papaparseOptions}
+          />
+        </Box>
+      </Box>
+      <FormLabel>Minting tokenIds</FormLabel>
+      <Flex>
+        {mintList.map((data) => {
+          return <Text key={data.tokenId}>{data.tokenId}, </Text>;
+        })}
+      </Flex>
       <FormLabel>NFT contract address</FormLabel>
       <Input
         placeholder="0x"
@@ -231,12 +269,8 @@ const Home: NextPage = () => {
         onChange={(e) => setNFTContractAddress(e.target.value)}
         mb="2"
       ></Input>
-      <FormLabel>Minting tokenIds</FormLabel>
-      <Flex>
-        {mintList.map((data) => {
-          return <Text key={data.tokenId}>{data.tokenId}, </Text>;
-        })}
-      </Flex>
+      <FormLabel>Salt</FormLabel>
+      <Input placeholder="0x" value={salt} onChange={(e) => setSalt(e.target.value)} mb="2"></Input>
       {account ? (
         <Button onClick={signMintToken} marginY="2">
           Send Tx

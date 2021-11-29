@@ -49,7 +49,9 @@ export const signDeploy = async (
   name: string,
   tokenURIBase: string,
   version: string,
-  symbol: string
+  symbol: string,
+  isRoot: boolean,
+  list?: MintList[]
 ) => {
   const chocoFactoryAddress = addressJson[chainId][CHOCO_FACTORY_CONTRACT];
   const chocoForwarderAddress = addressJson[chainId][CHOCO_FORWARDER_CONTRACT];
@@ -82,10 +84,6 @@ export const signDeploy = async (
     ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setTokenURIBase", [tokenURIBase, false]),
   ];
 
-  const data = initializeData
-    .concat(setAdminData)
-    .concat([ChocoMintERC721ImplementationContract.interface.encodeFunctionData("transferOwnership", [owner])]);
-
   const salt = process.env.SALT || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
 
   const securityData = {
@@ -93,6 +91,32 @@ export const signDeploy = async (
     validTo: ALWAYS_VALID_TO,
     salt,
   };
+
+  const mintERC721DataList = list.map((item) => {
+    return {
+      securityData,
+      minter,
+      to: item.walletAddress,
+      tokenId: item.tokenId,
+      data: NULL_BYTES,
+    };
+  });
+
+  const mintERC721leaves = mintERC721DataList.map((data) => {
+    return TypedDataUtils.hashStruct(mintERC721PrimaryType, data, mintERC721Type, SignTypedDataVersion.V4);
+  });
+
+  const mintERC721Tree = new MerkleTree(mintERC721leaves, keccak256, { sort: true });
+  const mintERC721Root = mintERC721Tree.getHexRoot();
+
+  const rootData = isRoot
+    ? [ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setRoot", [mintERC721Root, false])]
+    : [];
+
+  const data = initializeData
+    .concat(setAdminData)
+    .concat(rootData)
+    .concat([ChocoMintERC721ImplementationContract.interface.encodeFunctionData("transferOwnership", [owner])]);
 
   const deployData = {
     securityData,
@@ -123,7 +147,7 @@ export const signDeploy = async (
   const estimateGas = await chocoFactoryContract.estimateGas.deploy(deployData, signatureData);
   const deployCalldata = chocoFactoryContract.interface.encodeFunctionData("deploy", [deployData, signatureData]);
   console.log(deployCalldata, "deployCalldata");
-  return { deployCalldata, to: chocoFactoryContract.address, deployedAddress };
+  return { deployCalldata, to: chocoFactoryContract.address, deployedAddress, salt };
 };
 
 export const signMint = async (
@@ -133,9 +157,10 @@ export const signMint = async (
   chainId: number,
   verifyingContract: string,
   minter: string,
-  list: MintList[]
+  list: MintList[],
+  inputSalt?: string
 ) => {
-  const salt = process.env.SALT || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  const salt = inputSalt || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
   const chocoMintERC721BulkMinterAddress = addressJson[chainId][CHOCO_MINT_ERC721_BULK_MINTER_CONTRACT];
   const chocoMintERC721BulkMinterContract = new ethers.Contract(
     chocoMintERC721BulkMinterAddress,
