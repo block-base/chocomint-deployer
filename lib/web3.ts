@@ -42,14 +42,14 @@ export interface MintList {
 
 export const signDeploy = async (
   chainId: number,
-  signer?: JsonRpcSigner,
-  minter?: string,
-  owner?: string,
-  admin?: string,
-  name?: string,
-  tokenURIBase?: string,
-  version?: string,
-  symbol?: string
+  signer: JsonRpcSigner,
+  minter: string,
+  owner: string,
+  adminList: string[],
+  name: string,
+  tokenURIBase: string,
+  version: string,
+  symbol: string
 ) => {
   const chocoFactoryAddress = addressJson[chainId][CHOCO_FACTORY_CONTRACT];
   const chocoForwarderAddress = addressJson[chainId][CHOCO_FORWARDER_CONTRACT];
@@ -67,7 +67,11 @@ export const signDeploy = async (
 
   console.log(ChocoMintERC721ImplementationContract.interface, "ChocoMintERC721ImplementationContract");
 
-  const data = [
+  const setAdminData = adminList.map((admin) => {
+    return ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setAdmin", [admin, true]);
+  });
+
+  const initializeData = [
     ChocoMintERC721ImplementationContract.interface.encodeFunctionData("initialize", [
       name,
       version,
@@ -76,9 +80,11 @@ export const signDeploy = async (
       [],
     ]),
     ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setTokenURIBase", [tokenURIBase, false]),
-    ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setAdmin", [admin, true]),
-    ChocoMintERC721ImplementationContract.interface.encodeFunctionData("transferOwnership", [owner]),
   ];
+
+  const data = initializeData
+    .concat(setAdminData)
+    .concat([ChocoMintERC721ImplementationContract.interface.encodeFunctionData("transferOwnership", [owner])]);
 
   const salt = process.env.SALT || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
 

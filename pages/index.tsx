@@ -91,7 +91,7 @@ const Home: NextPage = () => {
       signer,
       signerAddress,
       owner,
-      adminList[0],
+      adminList,
       name,
       tokenURIBase,
       version,
