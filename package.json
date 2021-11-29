@@ -1,0 +1,37 @@
+{
+  "name": "nextjs",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "1.7.2",
+    "@emotion/react": "11.6.0",
+    "@emotion/styled": "11.6.0",
+    "@ethersproject/providers": "^5.5.0",
+    "@metamask/eth-sig-util": "^4.0.0",
+    "@web3-react/core": "6.1.9",
+    "@web3-react/injected-connector": "6.0.7",
+    "ethers": "5.5.1",
+    "framer-motion": "4.1.17",
+    "keccak256": "^1.0.3",
+    "merkletreejs": "^0.2.24",
+    "next": "latest",
+    "react": "17.0.2",
+    "react-csv-reader": "^3.4.0",
+    "react-dom": "17.0.2",
+    "typescript": "^4.5.2",
+    "web3-react": "^5.0.5"
+  },
+  "license": "MIT",
+  "keywords": [
+    "next"
+  ],
+  "description": "A \"Hello World\" application with multiple pages that shows how Next.js routing works.",
+  "devDependencies": {
+    "@types/node": "^16.11.10",
+    "@types/react": "^17.0.37"
+  }
+}
