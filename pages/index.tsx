@@ -257,11 +257,11 @@ const Home: NextPage = () => {
         </Box>
       </Box>
       <FormLabel>Minting tokenIds</FormLabel>
-      <Flex>
+      <Text>
         {mintList.map((data) => {
-          return <Text key={data.tokenId}>{data.tokenId}, </Text>;
+          return `${data.tokenId}, `;
         })}
-      </Flex>
+      </Text>
       <FormLabel>NFT contract address</FormLabel>
       <Input
         placeholder="0x"
