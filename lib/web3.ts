@@ -218,5 +218,5 @@ export const signMint = async (
     signatureDataList,
   ]);
   console.log(bulkMintCalldata);
-  return { to: chocoMintERC721BulkMinterAddress, calldata: bulkMintCalldata };
+  return { chocoMintERC721BulkMinterAddress, bulkMintCalldata };
 };

@@ -133,7 +133,7 @@ const Home: NextPage = () => {
     const signer = library.getSigner();
     const signerAddress = await signer.getAddress();
     console.log(mintList);
-    const { to, calldata } = await signMint(
+    const { chocoMintERC721BulkMinterAddress, bulkMintCalldata } = await signMint(
       signer,
       name,
       version,
@@ -143,8 +143,8 @@ const Home: NextPage = () => {
       mintList,
       salt
     );
-    setMintCalldata(calldata);
-    signer.sendTransaction({ to, data: mintCalldata });
+    setMintCalldata(bulkMintCalldata);
+    signer.sendTransaction({ to: chocoMintERC721BulkMinterAddress, data: bulkMintCalldata });
   };
 
   return (
