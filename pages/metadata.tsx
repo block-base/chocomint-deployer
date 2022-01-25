@@ -1,4 +1,4 @@
-import { Box, Button, Container, Flex, FormLabel, Heading, Textarea } from "@chakra-ui/react";
+import { Box, Button, Container, Flex, FormLabel, Heading, Text, Textarea } from "@chakra-ui/react";
 import csv from "csvtojson";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
@@ -7,6 +7,8 @@ import Head from "next/head";
 import React from "react";
 
 const Metadata: NextPage = () => {
+  const placeholder =
+    "tokenId,name,description,image_url,animation_url,external_url,attributes.0.trait_type,attributes.0.value,attributes.1.trait_type,attributes.1.value";
   const [metadataCSV, setMetadataCSV] = React.useState("");
   const dlMetadata = () => {
     const zip = new JSZip();
@@ -33,11 +35,17 @@ const Metadata: NextPage = () => {
         Chocomint Metadata Generator
       </Heading>
       <Box my="4">
-        <FormLabel>input csv</FormLabel>
+        <FormLabel>input csv as a text</FormLabel>
         <Box mb="4">
-          <Textarea minHeight={"300px"} value={metadataCSV} onChange={(e) => setMetadataCSV(e.target.value)}></Textarea>
+          <Textarea
+            placeholder={placeholder}
+            minHeight={"300px"}
+            value={metadataCSV}
+            onChange={(e) => setMetadataCSV(e.target.value)}
+          ></Textarea>
         </Box>
         <Button onClick={dlMetadata}>DL</Button>
+        <Text>DL and host it to IPFS or your own metadata server.</Text>
       </Box>
     </Container>
   );
