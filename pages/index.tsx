@@ -10,9 +10,7 @@ import {
   Radio,
   RadioGroup,
   Spacer,
-  Switch,
   Text,
-  Textarea,
 } from "@chakra-ui/react";
 import { Web3Provider } from "@ethersproject/providers";
 import { useWeb3React } from "@web3-react/core";
@@ -30,19 +28,15 @@ const Home: NextPage = () => {
   const [name, setName] = React.useState("");
   const [symbol, setSymbol] = React.useState("");
   const [version, setVersion] = React.useState("");
-  const [isRoot, setIsRoot] = React.useState(false);
-  const [root, setRoot] = React.useState("");
   const [salt, setSalt] = React.useState("");
   const [tokenURIBase, setTokenURIBase] = React.useState("");
   const [owner, setOwner] = React.useState("");
-  const [adminList, setAdminList] = React.useState([""]);
-  const [deployCalldata, setDeployCalldata] = React.useState("");
+  const [adminList, setAdminList] = React.useState([]);
   const [deployingContract, setDeployingContract] = React.useState("");
-  const [factoryAddress, setFactoryAddress] = React.useState("");
   const [mintList, setMintList] = React.useState([]);
-  const [mintCalldata, setMintCalldata] = React.useState("");
   const [nftContractAddress, setNFTContractAddress] = React.useState("");
   const [error, setError] = React.useState("");
+  const isRoot = false;
 
   const connectWallet = async () => {
     activate(injectedConnector);
@@ -71,7 +65,6 @@ const Home: NextPage = () => {
       .map((admin, i) => {
         return admin;
       });
-    // const newList = adminList.splice(index,1);
     setAdminList(newAttributes);
   };
 
@@ -79,7 +72,6 @@ const Home: NextPage = () => {
     setError("");
     if (!name || !symbol) {
       setError("name is undefined");
-      console.log("name is undefined");
       return;
     }
     if (!account || !library) {
@@ -103,20 +95,10 @@ const Home: NextPage = () => {
       mintList
     );
     console.log(deployCalldata, to, deployedAddress, salt);
-    setDeployCalldata(deployCalldata);
     setDeployingContract(deployedAddress);
     setNFTContractAddress(deployedAddress);
-    setFactoryAddress(to);
     setSalt(salt);
-  };
-
-  const deployContract = async () => {
-    if (!account || !library) {
-      setError("connect your wallet");
-      return;
-    }
-    const signer = library.getSigner();
-    signer.sendTransaction({ to: factoryAddress, data: deployCalldata });
+    signer.sendTransaction({ to: to, data: deployCalldata });
   };
 
   const papaparseOptions = {
@@ -132,19 +114,21 @@ const Home: NextPage = () => {
     }
     const signer = library.getSigner();
     const signerAddress = await signer.getAddress();
-    console.log(mintList);
-    const { chocoMintERC721BulkMinterAddress, bulkMintCalldata } = await signMint(
-      signer,
-      name,
-      version,
-      Number(chainId),
-      nftContractAddress,
-      signerAddress,
-      mintList,
-      salt
-    );
-    setMintCalldata(bulkMintCalldata);
-    signer.sendTransaction({ to: chocoMintERC721BulkMinterAddress, data: bulkMintCalldata });
+    const mintMaxNumber = 100;
+    for (let i = 0; i * mintMaxNumber < mintList.length; i++) {
+      const slicedList = mintList.slice(i * mintMaxNumber, i * mintMaxNumber + (mintMaxNumber - 1));
+      const { chocoMintERC721BulkMinterAddress, bulkMintCalldata } = await signMint(
+        signer,
+        name,
+        version,
+        Number(chainId),
+        nftContractAddress,
+        signerAddress,
+        slicedList,
+        salt
+      );
+      await signer.sendTransaction({ to: chocoMintERC721BulkMinterAddress, data: bulkMintCalldata });
+    }
   };
 
   return (
@@ -159,33 +143,14 @@ const Home: NextPage = () => {
       <Heading size="md" marginY="4">
         Contract Deploy
       </Heading>
-      <FormLabel>Set Root?</FormLabel>
-      <Switch
-        size="lg"
-        colorScheme="teal"
-        onChange={(e) => {
-          setIsRoot(e.target.checked);
-        }}
-      />
-      {isRoot ? (
-        <Box my="4">
-          <FormLabel>mint先</FormLabel>
-          <Box mb="4">
-            <CSVReader
-              onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
-              parserOptions={papaparseOptions}
-            />
-          </Box>
-        </Box>
-      ) : (
-        <></>
-      )}
+
       <FormLabel mt="2">chainId</FormLabel>
       <RadioGroup defaultValue="4" onChange={(e) => setChainId(e)} mb="4">
         <HStack spacing="24px">
           <Radio value="4">Rinkeby</Radio>
           <Radio value="1">Mainnet</Radio>
           <Radio value="137">Polygon</Radio>
+          <Radio value="80001">Mumbai</Radio>
           <Radio value="31337">Local</Radio>
         </HStack>
       </RadioGroup>
@@ -233,23 +198,20 @@ const Home: NextPage = () => {
         </Button>
       )}
 
-      <Text mt="8">Deploying Contract: {deployingContract}</Text>
-      <Textarea disabled value={deployCalldata}></Textarea>
-      {account ? (
-        <Button onClick={deployContract} marginY="2">
-          Send Tx
-        </Button>
-      ) : (
-        <Button onClick={connectWallet} marginY="2">
-          Connect Wallet
-        </Button>
-      )}
+      <Text mt="8">Deployed Contract: {deployingContract}</Text>
 
       <Heading size="md" mt="8" mb="4">
         Token Mint
       </Heading>
       <Box my="4">
-        <FormLabel>mint先</FormLabel>
+        <FormLabel>NFT contract address</FormLabel>
+        <Input
+          placeholder="0x"
+          value={nftContractAddress}
+          onChange={(e) => setNFTContractAddress(e.target.value)}
+          mb="2"
+        ></Input>
+        <FormLabel mt="4">Input your mint list as a CSV</FormLabel>
         <Box mb="4">
           <CSVReader
             onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
@@ -257,21 +219,7 @@ const Home: NextPage = () => {
           />
         </Box>
       </Box>
-      <FormLabel>Minting tokenIds</FormLabel>
-      <Text>
-        {mintList.map((data) => {
-          return `${data.tokenId}, `;
-        })}
-      </Text>
-      <FormLabel>NFT contract address</FormLabel>
-      <Input
-        placeholder="0x"
-        value={nftContractAddress}
-        onChange={(e) => setNFTContractAddress(e.target.value)}
-        mb="2"
-      ></Input>
-      <FormLabel>Salt</FormLabel>
-      <Input placeholder="0x" value={salt} onChange={(e) => setSalt(e.target.value)} mb="2"></Input>
+
       {account ? (
         <Button onClick={signMintToken} marginY="2">
           Send Tx
@@ -281,6 +229,17 @@ const Home: NextPage = () => {
           Connect Wallet
         </Button>
       )}
+      <Box my="4">
+        <FormLabel>Minting tokenIds and walletAddresses for check purpose↓</FormLabel>
+
+        {mintList.map((data) => {
+          return (
+            <Text key={data.tokenId}>
+              {data.tokenId}, {data.walletAddress}
+            </Text>
+          );
+        })}
+      </Box>
     </Container>
   );
 };

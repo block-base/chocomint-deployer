@@ -67,8 +67,6 @@ export const signDeploy = async (
     signer
   );
 
-  console.log(ChocoMintERC721ImplementationContract.interface, "ChocoMintERC721ImplementationContract");
-
   const setAdminData = adminList.map((admin) => {
     return ChocoMintERC721ImplementationContract.interface.encodeFunctionData("setAdmin", [admin, true]);
   });
@@ -125,23 +123,16 @@ export const signDeploy = async (
     data,
   };
 
-  const factoryDomain = {
-    name: CHOCO_FACTORY_NAME,
-    version: CHOCO_FACTORY_VERSION,
-    chainId,
-    verifyingContract: chocoFactoryContract.address,
-  };
   const deployHash = TypedDataUtils.hashStruct(deployPrimaryType, deployData, deployType, SignTypedDataVersion.V4);
 
   const deployLeaves = [deployHash];
   const deployTree = new MerkleTree(deployLeaves, keccak256, { sort: true });
   const deployRoot = deployTree.getRoot();
   const deployProof = deployTree.getHexProof(deployHash);
-  const deploySignature = await signer._signTypedData(factoryDomain, signatureType, { root: deployRoot });
   const signatureData = {
     root: deployRoot,
     proof: deployProof,
-    signature: deploySignature,
+    signature: NULL_BYTES,
   };
   const deployedAddress = await chocoFactoryContract.predict(deployData);
   const estimateGas = await chocoFactoryContract.estimateGas.deploy(deployData, signatureData);
@@ -185,7 +176,6 @@ export const signMint = async (
   });
 
   const mintERC721leaves = mintERC721DataList.map((data) => {
-    console.log(data);
     return TypedDataUtils.hashStruct(mintERC721PrimaryType, data, mintERC721Type, SignTypedDataVersion.V4);
   });
 
@@ -217,6 +207,5 @@ export const signMint = async (
     mintERC721DataList,
     signatureDataList,
   ]);
-  console.log(bulkMintCalldata);
   return { chocoMintERC721BulkMinterAddress, bulkMintCalldata };
 };
