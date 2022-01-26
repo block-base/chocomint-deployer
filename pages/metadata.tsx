@@ -12,10 +12,9 @@ const Metadata: NextPage = () => {
   const [metadataCSV, setMetadataCSV] = React.useState("");
   const dlMetadata = () => {
     const zip = new JSZip();
-    csv()
+    csv({ ignoreEmpty: true })
       .fromString(metadataCSV)
       .then((jsonObj) => {
-        console.log(jsonObj);
         for (let i = 0; i < jsonObj.length; i++) {
           zip.file(`${jsonObj[i].tokenId}`, JSON.stringify(jsonObj[i], null, "\t"));
         }
