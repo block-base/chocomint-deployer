@@ -190,7 +190,7 @@ const Home: NextPage = () => {
       <Text color="red">{error}</Text>
       {account ? (
         <Button onClick={signDeployContract} marginY="2">
-          Sign
+          Deploy
         </Button>
       ) : (
         <Button onClick={connectWallet} marginY="2">
@@ -222,7 +222,7 @@ const Home: NextPage = () => {
 
       {account ? (
         <Button onClick={signMintToken} marginY="2">
-          Send Tx
+          Sign and Send Tx
         </Button>
       ) : (
         <Button onClick={connectWallet} marginY="2">
