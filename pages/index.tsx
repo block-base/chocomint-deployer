@@ -148,6 +148,7 @@ const Home: NextPage = () => {
       <RadioGroup defaultValue="4" onChange={(e) => setChainId(e)} mb="4">
         <HStack spacing="24px">
           <Radio value="4">Rinkeby</Radio>
+          <Radio value="3">Ropsten</Radio>
           <Radio value="1">Mainnet</Radio>
           <Radio value="137">Polygon</Radio>
           <Radio value="80001">Mumbai</Radio>
