@@ -19,7 +19,7 @@ import Head from "next/head";
 import React from "react";
 import CSVReader from "react-csv-reader";
 
-import { injectedConnector, signDeploy, signMint } from "../lib/web3";
+import { generateMintSignature, injectedConnector, signDeploy, signMint } from "../lib/web3";
 
 const Home: NextPage = () => {
   const { account, activate, library } = useWeb3React<Web3Provider>();
@@ -36,7 +36,9 @@ const Home: NextPage = () => {
   const [mintList, setMintList] = React.useState([]);
   const [nftContractAddress, setNFTContractAddress] = React.useState("");
   const [error, setError] = React.useState("");
+  const [mintingCount, setMintingCount] = React.useState(0);
   const isRoot = false;
+  const mintMaxNumber = 100;
 
   const connectWallet = async () => {
     activate(injectedConnector);
@@ -108,23 +110,40 @@ const Home: NextPage = () => {
   };
 
   const signMintToken = async () => {
+    setMintingCount(0);
     if (!account || !library) {
       setError("connect your wallet");
       return;
     }
     const signer = library.getSigner();
     const signerAddress = await signer.getAddress();
-    const mintMaxNumber = 100;
-    for (let i = 0; i * mintMaxNumber < mintList.length; i++) {
-      const slicedList = mintList.slice(i * mintMaxNumber, i * mintMaxNumber + (mintMaxNumber - 1));
-      const { chocoMintERC721BulkMinterAddress, bulkMintCalldata } = await signMint(
+    const { chocoMintERC721BulkMinterAddress, mintSignature, mintERC721Root, mintERC721leaves, mintERC721Tree } =
+      await generateMintSignature(
         signer,
         name,
         version,
         Number(chainId),
         nftContractAddress,
         signerAddress,
+        mintList,
+        salt
+      );
+
+    for (let i = 0; i * mintMaxNumber < mintList.length; i++) {
+      setMintingCount(i + 1);
+      const slicedList = mintList.slice(i * mintMaxNumber, i * mintMaxNumber + mintMaxNumber);
+
+      const { bulkMintCalldata } = await signMint(
+        signer,
+        mintSignature,
+        Number(chainId),
+        nftContractAddress,
+        mintERC721Root,
+        mintERC721leaves,
+        mintERC721Tree,
+        signerAddress,
         slicedList,
+        i,
         salt
       );
       await signer.sendTransaction({ to: chocoMintERC721BulkMinterAddress, data: bulkMintCalldata });
@@ -160,7 +179,7 @@ const Home: NextPage = () => {
       <FormLabel>symbol</FormLabel>
       <Input placeholder="CA" value={symbol} onChange={(e) => setSymbol(e.target.value)} mb="2"></Input>
       <FormLabel>version</FormLabel>
-      <Input placeholder="0.0.0" value={version} onChange={(e) => setVersion(e.target.value)} mb="2"></Input>
+      <Input placeholder="1.0.0" value={version} onChange={(e) => setVersion(e.target.value)} mb="2"></Input>
       <FormLabel>tokenURIBase</FormLabel>
       <Input
         placeholder="https://ipfs/..."
@@ -175,7 +194,7 @@ const Home: NextPage = () => {
         return (
           <Flex key={index}>
             <Input placeholder="0x" value={adminList[index]} onChange={(e) => handleAdmin(index, e)} mb="2"></Input>
-            <Button colorScheme="teal" onClick={(e) => removeAdmin(index)}>
+            <Button colorScheme="teal" onClick={() => removeAdmin(index)}>
               ×
             </Button>
           </Flex>
@@ -200,7 +219,7 @@ const Home: NextPage = () => {
 
       <Text mt="8">Deployed Contract: {deployingContract}</Text>
 
-      <Heading size="md" mt="8" mb="4">
+      <Heading size="md" mt="16" mb="4">
         Token Mint
       </Heading>
       <Box my="4">
@@ -213,10 +232,7 @@ const Home: NextPage = () => {
         ></Input>
         <FormLabel mt="4">Input your mint list as a CSV</FormLabel>
         <Box mb="4">
-          <CSVReader
-            onFileLoaded={(data, fileInfo, originalFile) => setMintList(data)}
-            parserOptions={papaparseOptions}
-          />
+          <CSVReader onFileLoaded={(data) => setMintList(data)} parserOptions={papaparseOptions} />
         </Box>
       </Box>
 
@@ -230,15 +246,8 @@ const Home: NextPage = () => {
         </Button>
       )}
       <Box my="4">
-        <FormLabel>Minting tokenIds and walletAddresses for check purpose↓</FormLabel>
-
-        {mintList.map((data) => {
-          return (
-            <Text key={data.tokenId}>
-              {data.tokenId}, {data.walletAddress}
-            </Text>
-          );
-        })}
+        <Text>You are currently minting ... </Text>
+        {mintingCount}/{Math.ceil(mintList.length / 100)}
       </Box>
     </Container>
   );

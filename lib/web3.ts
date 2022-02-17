@@ -143,6 +143,62 @@ export const signDeploy = async (
 
 export const signMint = async (
   signer: JsonRpcSigner,
+  mintSignature: string,
+  chainId: number,
+  verifyingContract: string,
+  mintERC721Root: string,
+  mintERC721leaves: Buffer[],
+  mintERC721Tree: MerkleTree,
+  minter: string,
+  list: MintList[],
+  indexeCount: number,
+  inputSalt?: string
+) => {
+  const salt = inputSalt || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  const chocoMintERC721BulkMinterAddress = addressJson[chainId][CHOCO_MINT_ERC721_BULK_MINTER_CONTRACT];
+  const chocoMintERC721BulkMinterContract = new ethers.Contract(
+    chocoMintERC721BulkMinterAddress,
+    ChocoMintERC721BulkMinter.abi,
+    signer
+  );
+
+  const securityData = {
+    validFrom: ALWAYS_VALID_FROM,
+    validTo: ALWAYS_VALID_TO,
+    salt,
+  };
+
+  const mintERC721DataList = list.map((item) => {
+    return {
+      securityData,
+      minter,
+      to: item.walletAddress,
+      tokenId: item.tokenId,
+      data: NULL_BYTES,
+    };
+  });
+
+  const slicedLeaves = mintERC721leaves.slice(indexeCount * 100, indexeCount * 100 + list.length);
+
+  const signatureDataList = slicedLeaves.map((leaf: Buffer) => {
+    const mintERC721proof = mintERC721Tree.getHexProof(leaf);
+    return {
+      root: mintERC721Root,
+      proof: mintERC721proof,
+      signature: mintSignature,
+    };
+  });
+
+  const bulkMintCalldata = chocoMintERC721BulkMinterContract.interface.encodeFunctionData("mint", [
+    verifyingContract,
+    mintERC721DataList,
+    signatureDataList,
+  ]);
+  return { chocoMintERC721BulkMinterAddress, bulkMintCalldata };
+};
+
+export const generateMintSignature = async (
+  signer: JsonRpcSigner,
   name: string,
   version: string,
   chainId: number,
@@ -153,11 +209,6 @@ export const signMint = async (
 ) => {
   const salt = inputSalt || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
   const chocoMintERC721BulkMinterAddress = addressJson[chainId][CHOCO_MINT_ERC721_BULK_MINTER_CONTRACT];
-  const chocoMintERC721BulkMinterContract = new ethers.Contract(
-    chocoMintERC721BulkMinterAddress,
-    ChocoMintERC721BulkMinter.abi,
-    signer
-  );
 
   const securityData = {
     validFrom: ALWAYS_VALID_FROM,
@@ -193,19 +244,5 @@ export const signMint = async (
 
   const mintSignature = await signer._signTypedData(chocomintDomain, signatureType, { root: mintERC721Root });
 
-  const signatureDataList = mintERC721leaves.map((leaf: Buffer) => {
-    const mintERC721proof = mintERC721Tree.getHexProof(leaf);
-    return {
-      root: mintERC721Root,
-      proof: mintERC721proof,
-      signature: mintSignature,
-    };
-  });
-
-  const bulkMintCalldata = chocoMintERC721BulkMinterContract.interface.encodeFunctionData("mint", [
-    verifyingContract,
-    mintERC721DataList,
-    signatureDataList,
-  ]);
-  return { chocoMintERC721BulkMinterAddress, bulkMintCalldata };
+  return { chocoMintERC721BulkMinterAddress, mintSignature, mintERC721Root, mintERC721leaves, mintERC721Tree };
 };
