@@ -207,7 +207,9 @@ export const generateMintSignature = async (
   list: MintList[],
   inputSalt?: string
 ) => {
+  console.log(inputSalt);
   const salt = inputSalt || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  console.log(salt);
   const chocoMintERC721BulkMinterAddress = addressJson[chainId][CHOCO_MINT_ERC721_BULK_MINTER_CONTRACT];
 
   const securityData = {

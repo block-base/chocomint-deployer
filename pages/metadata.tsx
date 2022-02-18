@@ -43,8 +43,8 @@ const Metadata: NextPage = () => {
             onChange={(e) => setMetadataCSV(e.target.value)}
           ></Textarea>
         </Box>
-        <Button onClick={dlMetadata}>DL</Button>
-        <Text>DL and host it to IPFS or your own metadata server.</Text>
+        <Button onClick={dlMetadata}>Download</Button>
+        <Text>Download and host it to IPFS or your own metadata server.</Text>
       </Box>
     </Container>
   );
