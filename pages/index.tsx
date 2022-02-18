@@ -506,7 +506,6 @@ const Home: NextPage = () => {
       ) : (
         <></>
       )}
-
       {pageStatus == "mint" ? (
         <Box mb="8">
           <Heading size="md" mt="16" mb="4">
