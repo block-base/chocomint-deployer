@@ -8,7 +8,6 @@ import {
   Heading,
   HStack,
   Icon,
-  Image,
   Input,
   Link,
   Radio,
@@ -41,7 +40,6 @@ const Home: NextPage = () => {
   const [name, setName] = React.useState("");
   const [symbol, setSymbol] = React.useState("");
   const [version, setVersion] = React.useState("");
-  const [salt, setSalt] = React.useState("");
   const [tokenURIBase, setTokenURIBase] = React.useState("");
   const [owner, setOwner] = React.useState("");
   const [adminList, setAdminList] = React.useState([]);
@@ -106,7 +104,7 @@ const Home: NextPage = () => {
 
     const signer = library.getSigner();
     const signerAddress = await signer.getAddress();
-    const { deployCalldata, to, deployedAddress, salt } = await signDeploy(
+    const { deployCalldata, to, deployedAddress } = await signDeploy(
       Number(chainId),
       signer,
       signerAddress,
@@ -121,7 +119,6 @@ const Home: NextPage = () => {
     );
     setDeployingContract(deployedAddress);
     setNFTContractAddress(deployedAddress);
-    setSalt(salt);
     const deployTx = await signer.sendTransaction({ to: to, data: deployCalldata });
     setDeployTxHash(deployTx.hash);
   };
@@ -162,7 +159,7 @@ const Home: NextPage = () => {
         nftContractAddress,
         signerAddress,
         mintList,
-        salt
+        "0x00"
       );
 
     for (let i = 0; i * mintMaxNumber < mintList.length; i++) {
@@ -180,7 +177,7 @@ const Home: NextPage = () => {
         signerAddress,
         slicedList,
         i,
-        salt
+        "0x00"
       );
       try {
         const mintTx = await signer.sendTransaction({ to: chocoMintERC721BulkMinterAddress, data: bulkMintCalldata });
@@ -240,8 +237,6 @@ const Home: NextPage = () => {
         onChange={(e) => setNFTContractAddress(e.target.value)}
         mb="2"
       ></Input>
-      <FormLabel>salt</FormLabel>
-      <Input placeholder="" value={salt} onChange={(e) => setSalt(e.target.value)} mb="2"></Input>
     </>
   );
 
@@ -340,14 +335,6 @@ const Home: NextPage = () => {
         <Link href={`${chainIdConfig[chainId].explore}address/${deployingContract}`} color={"blue.400"} isExternal>
           {deployingContract}
         </Link>
-      </Text>
-      <Text my="2">
-        salt: {salt}{" "}
-        <Tooltip label="Keep this string as it will be needed when you mint token">
-          <span>
-            <Icon as={FaInfoCircle} w={4} h={4} ml="1" color={"gray"}></Icon>
-          </span>
-        </Tooltip>
       </Text>
       {deployTxHash ? (
         <Link href={`${chainIdConfig[chainId].explore}tx/${deployTxHash}`} color={"blue.400"} isExternal>
@@ -485,7 +472,16 @@ const Home: NextPage = () => {
               ))}
             </Steps>
             <Flex justify="flex-end">
-              <Button isDisabled={activeStep === 0} mr={4} onClick={prevStep} size="sm" variant="ghost">
+              <Button
+                isDisabled={activeStep === 0}
+                mr={4}
+                onClick={() => {
+                  prevStep();
+                  setError("");
+                }}
+                size="sm"
+                variant="ghost"
+              >
                 Prev
               </Button>
               <Button
@@ -525,13 +521,36 @@ const Home: NextPage = () => {
               <Heading fontSize="xl" textAlign="center">
                 Woohoo! All steps completed!
               </Heading>
-              <Button mx="auto" mt={6} size="sm" onClick={reset}>
-                Reset
-              </Button>
+              <Flex justify="center">
+                <Button
+                  isDisabled={activeStep === 0}
+                  mt={6}
+                  onClick={() => {
+                    prevStep();
+                    setError("");
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Prev
+                </Button>
+                <Button mt={6} size="sm" onClick={reset}>
+                  Reset
+                </Button>
+              </Flex>
             </Flex>
           ) : (
             <Flex justify="flex-end">
-              <Button isDisabled={activeStep === 0} mr={4} onClick={prevStep} size="sm" variant="ghost">
+              <Button
+                isDisabled={activeStep === 0}
+                mr={4}
+                onClick={() => {
+                  prevStep();
+                  setError("");
+                }}
+                size="sm"
+                variant="ghost"
+              >
                 Prev
               </Button>
               <Button size="sm" onClick={nextStep}>
