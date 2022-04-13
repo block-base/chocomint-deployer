@@ -199,6 +199,7 @@ const Home: NextPage = () => {
           <Radio value="3">Ropsten</Radio>
           <Radio value="1">Mainnet</Radio>
           <Radio value="137">Polygon</Radio>
+          <Radio value="592">Astar</Radio>
           <Radio value="80001">Mumbai</Radio>
           <Radio value="31337">Local</Radio>
         </HStack>
