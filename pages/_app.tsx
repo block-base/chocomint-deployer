@@ -1,3 +1,6 @@
+import "../public/DateTimePicker.css";
+import "../public/Calendar.css";
+
 import type { AppProps } from "next/app";
 import React from "react";
 

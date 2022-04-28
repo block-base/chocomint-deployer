@@ -2,7 +2,7 @@ import { Interface } from "@ethersproject/abi";
 import { JsonRpcSigner } from "@ethersproject/providers";
 import { SignTypedDataVersion, TypedDataUtils } from "@metamask/eth-sig-util";
 import { InjectedConnector } from "@web3-react/injected-connector";
-import { ethers } from "ethers";
+import { BigNumber, Bytes, BytesLike, ethers } from "ethers";
 import keccak256 from "keccak256";
 import MerkleTree from "merkletreejs";
 
@@ -17,10 +17,12 @@ import {
   CHOCO_FORWARDER_CONTRACT,
   CHOCO_MINT_ERC721_BULK_MINTER_CONTRACT,
   CHOCO_MINT_ERC721_IMPLEMENTATION_CONTRACT,
+  CHOCO_MINT_SELLABLE_WRAPPER_CONTRACT,
   NULL_BYTES,
   NULL_NUMBER,
 } from "../contracts/constants";
 import ChocoMintERC721BulkMinter from "../contracts/interfaces/ChocoMintERC721BulkMinter.json";
+import ChocoMintSellebaleWrapper from "../contracts/interfaces/ChocoMintSellableWrapper.json";
 import IChocoFactoryABI from "../contracts/interfaces/IChocoFactory.json";
 import IChocoMintERC721 from "../contracts/interfaces/IChocoMintERC721.json";
 import {
@@ -247,4 +249,76 @@ export const generateMintSignature = async (
   const mintSignature = await signer._signTypedData(chocomintDomain, signatureType, { root: mintERC721Root });
 
   return { chocoMintERC721BulkMinterAddress, mintSignature, mintERC721Root, mintERC721leaves, mintERC721Tree };
+};
+
+export const generateSellableContract = async (
+  chainId: number,
+  signer: JsonRpcSigner,
+  deployer: string,
+  chocoMintERC721Address: string,
+  preSalePrice: BigNumber,
+  publicSalePrice: BigNumber,
+  supplyLimit: number,
+  mintLimit: number,
+  preSaleStartTimestamp: number,
+  publicSaleStartTimestamp: number,
+  payees: string[],
+  shares: number[]
+) => {
+  const chocoFactoryAddress = addressJson[chainId][CHOCO_FACTORY_CONTRACT];
+  const chocoForwarderAddress = addressJson[chainId][CHOCO_FORWARDER_CONTRACT];
+  const chocoMintSellableWrapperAddress = addressJson[chainId][CHOCO_MINT_SELLABLE_WRAPPER_CONTRACT];
+  const chocoFactoryContract = new ethers.Contract(chocoFactoryAddress, IChocoFactoryABI.abi, signer);
+
+  const ChocoMintSellableWrapperContract = new ethers.Contract(
+    chocoMintSellableWrapperAddress,
+    ChocoMintSellebaleWrapper.abi,
+    signer
+  );
+  const data = [
+    ChocoMintSellableWrapperContract.interface.encodeFunctionData("initialize", [
+      chocoMintERC721Address,
+      preSalePrice,
+      publicSalePrice,
+      supplyLimit,
+      mintLimit,
+      preSaleStartTimestamp,
+      publicSaleStartTimestamp,
+      payees,
+      shares,
+    ]),
+    ChocoMintSellableWrapperContract.interface.encodeFunctionData("transferOwnership", [deployer]),
+  ];
+
+  const salt = process.env.SALT || ethers.BigNumber.from(ethers.utils.randomBytes(32)).toString();
+  const securityData = {
+    validFrom: ALWAYS_VALID_FROM,
+    validTo: ALWAYS_VALID_TO,
+    salt,
+  };
+
+  const deployData = {
+    securityData,
+    deployer,
+    implementation: chocoMintSellableWrapperAddress,
+    data,
+  };
+
+  const deployHash = TypedDataUtils.hashStruct(deployPrimaryType, deployData, deployType, SignTypedDataVersion.V4);
+
+  const deployLeaves = [deployHash];
+  const deployTree = new MerkleTree(deployLeaves, keccak256, { sort: true });
+  const deployRoot = deployTree.getRoot();
+  const deployProof = deployTree.getHexProof(deployHash);
+  const signatureData = {
+    root: deployRoot,
+    proof: deployProof,
+    signature: NULL_BYTES,
+  };
+  const deployedAddress = await chocoFactoryContract.predict(deployData);
+  const estimateGas = await chocoFactoryContract.estimateGas.deploy(deployData, signatureData);
+  console.log(estimateGas);
+  const deployCalldata = chocoFactoryContract.interface.encodeFunctionData("deploy", [deployData, signatureData]);
+  console.log(deployCalldata, "deployCalldata");
+  return { deployCalldata, to: chocoFactoryContract.address, deployedAddress, salt };
 };
